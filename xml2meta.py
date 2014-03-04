@@ -1,9 +1,8 @@
 '''Convert an xml atlas description
-to an atlas .meta description for unity3d 4.3'''
-#@file json2meta.py 
+to an atlas .meta description for Unity3d 4.3'''
 #@author niroyb
 #@date 2014-03-03
-# Usage >> xml2meta.py inputfile.txt > outputfile.txt
+# Usage: xml2meta.py inputfile.xml > outputfile.meta
 import xml.etree.ElementTree as ET
 import json
 import os
@@ -19,9 +18,8 @@ FMT = '''      rect:
       alignment: 7
       pivot: {{x: .5, y: 0}}'''
 
-def formartProp(**args):
-    '''Returns the .meta formated string of the json atlas properties of a sprite'''
-    
+def attribTometa(**args):
+    '''Returns the .meta formated string of the atlas properties of a sprite'''
     #print args
     if 'invertY' in args:
         #invert y and push down
@@ -30,36 +28,39 @@ def formartProp(**args):
     name = args['name']
     return '    - name: {}\n{}'.format(os.path.splitext(name)[0],
                                            FMT.format(**args))
+def attribsToMeta(attribs):
+    '''Converts the atlas description to a .meta formatted string'''
+    out = []
+    for a in attribs:
+        out.append(attribTometa(**a))
+    out.sort()
+    return '\n'.join(out)
 
 def getAttribs(fname):
-    '''Returns the properties of each sprite of the spritesheet'''
+    '''Returns the properties of each sprite in the xml spritesheet'''
     tree = ET.parse(fname)
     attribs = [child.attrib for child in tree.getroot()]
     return attribs
 
 def guessHeight(attribs):
-    '''Guess the height of the texture from the attribs'''
+    '''Guess the height of the original texture from the attribs'''
     return max(int(a['y']) + int(a['height']) for a in attribs)
 
-def addAttribParam(attribs, param, value):
+def setAttribParam(attribs, param, value):
+    '''Sets the param attribute on all attribs'''
     for a in attribs:
         a[param] = value
 
-def getMeta(fname):
-    '''Returns the complete json atlas description formatted to .meta'''
+def main(fname):
     attribs = getAttribs(fname)
     height = guessHeight(attribs)
-    addAttribParam(attribs, 'invertY', height)
-    out = []
-    for a in attribs:
-        out.append(formartProp(**a))
-    out.sort()
-    out = '\n'.join(out)
-    return out
-
-def main():
-    fname = sys.argv[1]
-    meta = getMeta(fname)
+    #We want to invert y for the demo
+    setAttribParam(attribs, 'invertY', height)
+    meta = attribsToMeta(attribs)
     print meta
 
-main()
+if __name__ == '__main__':
+    if len(sys.argv) >= 2:
+        main(sys.argv[1])
+    else:
+        raise Exception('Missing input file argument')
