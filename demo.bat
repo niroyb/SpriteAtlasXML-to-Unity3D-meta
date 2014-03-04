@@ -1,0 +1,1 @@
+xml2meta.py demo/sheet.xml > demo/output.meta
